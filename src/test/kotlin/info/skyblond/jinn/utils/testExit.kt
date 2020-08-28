@@ -20,7 +20,7 @@ fun assertExit(op: () -> Unit) {
     val originalSecurityManager = System.getSecurityManager()
     // Disable really exit jvm
     System.setSecurityManager(disallowExitSecurityManager)
-    val exception = assertThrows<SystemExitPreventedException>({ "Should throw an Exception" }) {
+    assertThrows<SystemExitPreventedException>({ "Should throw an Exception" }) {
         op()
     }
 
