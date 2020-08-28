@@ -1,19 +1,19 @@
 # This workflow will build a Java project with Gradle
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-# This CI test and build application, collect dist as artifact
-# Also generate project report. Collect test report when test failed.
+# This CI test application, generate project report.
+# Collect test report when test failed.
 
-name: master and release CI
+name: develop and feature CI
 
 on:
   push:
     branches:
-    - master
-    - release/*
+    - develop
+    - feature/*
   pull_request:
     branches:
-    - master
+    - develop
 
 jobs:
   build:
@@ -35,13 +35,6 @@ jobs:
         name: test reports
         path: build/reports/tests
       if: ${{ failure() }}
-    - name: Build application with Gradle
-      run: ./gradlew assembleDist
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.1.4
-      with:
-        name: artifact
-        path: build/distributions/
     - name: Generate project report
       run: ./gradlew projectReport
     - name: Upload project reports
