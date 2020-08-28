@@ -44,7 +44,7 @@ jobs:
     - name: Generate project report
       run: ./gradlew projectReport
     - name: Upload project reports
-        uses: actions/upload-artifact@v2.1.4
-        with:
-          name: project reports
-          path: build/reports/project
+      uses: actions/upload-artifact@v2.1.4
+      with:
+        name: project reports
+        path: build/reports/project
