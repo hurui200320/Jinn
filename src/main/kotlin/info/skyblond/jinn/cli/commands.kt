@@ -96,6 +96,8 @@ class Init : CliktCommand(name = "init", help = "Initialize things"), RootComman
     )
 
     class GenerateConfigFile : CliktCommand(name = "config", help = "Generate default config.yaml with given path") {
+        private val logger = LoggerFactory.getLogger(GenerateConfigFile::class.java)
+
         override fun run() {
             val configFile = File(ConfigObject.configFilePath)
             when {
@@ -104,8 +106,13 @@ class Init : CliktCommand(name = "init", help = "Initialize things"), RootComman
                     exitProcess(17)
                 }
                 configFile.createNewFile() -> {
-                    configFile.writeText(Yaml.default.encodeToString(ConfigPOJO.serializer(), ConfigObject.config), StandardCharsets.UTF_8)
-                    echo("Config file created: ${ConfigObject.configFilePath}")
+                    try {
+                        configFile.writeText(Yaml.default.encodeToString(ConfigPOJO.serializer(), ConfigObject.config), StandardCharsets.UTF_8)
+                        echo("Config file created: ${ConfigObject.configFilePath}")
+                    } catch (e: Exception) {
+                        logger.error(ExceptionUtils.getStackTrace(e))
+                        echo("Error when creating config file. Please refer to logs/app.log for more information.")
+                    }
                 }
                 else -> {
                     echo("Cannot create new file with given path: ${ConfigObject.configFilePath}", err = true)
