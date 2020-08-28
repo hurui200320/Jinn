@@ -1,5 +1,7 @@
 package info.skyblond.jinn
 
-fun main() {
-    println("Hello World!")
+import info.skyblond.jinn.cli.Application
+
+fun main(args: Array<String>) {
+    Application().getAllSubcommands().main(args)
 }
