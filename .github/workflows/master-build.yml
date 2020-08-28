@@ -25,6 +25,14 @@ jobs:
       run: chmod +x gradlew
     - name: Test with Gradle
       run: ./gradlew test
+    - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v2.1.4
+        with:
+          # Artifact name
+          name: reports
+          # A file, directory or wildcard pattern that describes what to upload
+          path: build/reports/
+        if: ${{ failure() }}
     - name: Build Application with Gradle
       run: ./gradlew assembleDist
     - name: Upload a Build Artifact
