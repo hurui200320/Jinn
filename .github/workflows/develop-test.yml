@@ -34,7 +34,6 @@ jobs:
       with:
         name: test reports
         path: build/reports/tests
-      if: ${{ failure() }}
     - name: Generate project report
       run: ./gradlew projectReport
     - name: Upload project reports
