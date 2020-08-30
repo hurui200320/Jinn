@@ -18,6 +18,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgresql:
+        image: postgres
+        environment:
+          POSTGRES_PASSWORD: qOA$&fHGOceoIqxD
+          POSTGRES_USER: logbook
+          POSTGRES_DB: logbook
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v2
     - name: Setup Java JDK

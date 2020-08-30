@@ -61,6 +61,5 @@ internal class InitTest {
     fun initDatabaseTest() {
         // No mock database here
         // cannot test this function
-        // TODO in memory database support to test(H2)
     }
 }
