@@ -37,6 +37,62 @@ internal class TDD {
 
         val database = Database.connect(hikariDataSource, dialect = MyPostgreSqlDialect())
 
+        database.useConnection { conn ->
+            val sql = """
+                create table if not exists qso_infos
+                (
+                    id              bigserial   not null
+                        constraint qso_infos_pk
+                            primary key,
+                    qso_date        date        not null,
+                    qso_time        time        not null,
+                    callsign        varchar(20) not null,
+                    frequency       bigint      not null,
+                    qso_mode        varchar(50) not null,
+                    signal_report   jsonb       not null,
+                    other_side_info jsonb       not null,
+                    operator_info   jsonb       not null,
+                    contest_info    jsonb       not null,
+                    extra_info      jsonb       not null,
+                    qsl_info        jsonb       not null
+                );
+                
+                comment on table qso_infos is 'Basic QSO information';
+                
+                comment on column qso_infos.qso_date is 'qso date in UTC';
+                
+                comment on column qso_infos.qso_time is 'qso time in UTC';
+                
+                comment on column qso_infos.callsign is 'his/her callsign';
+                
+                comment on column qso_infos.frequency is 'working freq, band come from this automatically';
+                
+                comment on column qso_infos.qso_mode is 'mode, such as FT8, ssb, cw, etc.';
+                
+                comment on column qso_infos.signal_report is 'Singnal report: {"sent": 599, "rcvd": 599}';
+                
+                comment on column qso_infos.other_side_info is 'other side''s info';
+                
+                comment on column qso_infos.operator_info is 'operator''s info';
+                
+                comment on column qso_infos.contest_info is 'contest info, such as exchange records';
+                
+                comment on column qso_infos.extra_info is 'Such as IOTA, Satellite, repeater ';
+                
+                comment on column qso_infos.qsl_info is 'LOTW, QSL card';
+                
+                alter table qso_infos
+                    owner to logbook;
+                
+                create unique index if not exists qso_record_uindex
+                    on qso_infos (qso_date, qso_time, callsign, frequency, qso_mode);
+            """.trimIndent()
+
+            conn.prepareStatement(sql).use { statement ->
+                statement.executeQuery()
+            }
+        }
+
         database.sequenceOf(QsoInfos).forEach { it.delete() }
 
         database.sequenceOf(QsoInfos).add(QsoInfo {
