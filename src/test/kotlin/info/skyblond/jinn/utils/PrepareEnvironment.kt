@@ -6,7 +6,7 @@ import info.skyblond.jinn.ServerAddr
 
 internal fun prepareDatabaseConfig() {
     ConfigObject.databaseConfig = DatabaseConfig(
-        "logbook", false, "", "",
+        "logbook", true, "logbook", "example",
         listOf(ServerAddr("localhost", 27017))
     )
 }
