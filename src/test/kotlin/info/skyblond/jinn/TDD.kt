@@ -88,9 +88,8 @@ internal class TDD {
                     on qso_infos (qso_date, qso_time, callsign, frequency, qso_mode);
             """.trimIndent()
 
-            conn.prepareStatement(sql).use { statement ->
-                statement.executeQuery()
-            }
+            conn.createStatement().execute(sql)
+            conn.close()
         }
 
         database.sequenceOf(QsoInfos).forEach { it.delete() }
