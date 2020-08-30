@@ -1,6 +1,11 @@
 package info.skyblond.jinn
 
-import kotlinx.serialization.*
+import com.impossibl.postgres.jdbc.PGDataSource
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import info.skyblond.jinn.extension.MyPostgreSqlDialect
+import kotlinx.serialization.Serializable
+import me.liuwj.ktorm.database.Database
 
 object ConfigObject {
     var configFilePath = ""
@@ -13,6 +18,32 @@ object ConfigObject {
             "qOA\$&fHGOceoIqxD"
         )
     )
+
+    // No need to change database on the fly
+    private var internalDatabase: Database? = null
+    val database: Database
+        get() {
+            if (internalDatabase == null) {
+                val pgDataSource = PGDataSource()
+                pgDataSource.serverName = config.databaseConfig.host
+                pgDataSource.portNumber = config.databaseConfig.port
+                pgDataSource.user = config.databaseConfig.username
+                pgDataSource.password = config.databaseConfig.password
+                pgDataSource.databaseName = config.databaseConfig.database
+
+                val config = HikariConfig()
+                config.driverClassName = "com.impossibl.postgres.jdbc.PGDataSource"
+                config.dataSource = pgDataSource
+                config.addDataSourceProperty("cachePrepStmts", "true")
+                config.addDataSourceProperty("prepStmtCacheSize", "250")
+                config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
+
+                val hikariDataSource = HikariDataSource(config)
+
+                internalDatabase = Database.connect(hikariDataSource, dialect = MyPostgreSqlDialect())
+            }
+            return internalDatabase!!
+        }
 }
 
 @Serializable

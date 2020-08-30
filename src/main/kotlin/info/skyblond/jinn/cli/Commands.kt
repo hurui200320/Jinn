@@ -72,18 +72,21 @@ class QSO : CliktCommand(name = "qso", help = "Manage QSO things"), RootCommand<
     class Import : CliktCommand(help = "Import QSO(s) from files") {
         override fun run() {
             echo("Hello World!")
+            TODO()
         }
     }
 
     class List : CliktCommand(help = "Print all QSO(s) to stdout") {
         override fun run() {
             echo("Hello World!")
+            TODO()
         }
     }
 
     class Filter : CliktCommand(help = "Filter QSO(s) and print to stdout") {
         override fun run() {
             echo("Hello World!")
+            TODO()
         }
     }
 }
@@ -124,7 +127,35 @@ class Init : CliktCommand(name = "init", help = "Initialize things"), RootComman
 
     class InitDatabase : CliktCommand(name = "database", help = "Initialize database for first use") {
         override fun run() {
-            TODO("Not Implemented")
+            val database = ConfigObject.database
+            database.useTransaction {
+                // Create table qso_infos
+                database.useConnection { conn ->
+                    val sql = """
+                        create table if not exists qso_infos (
+                            id              bigserial   not null
+                                constraint qso_infos_pk
+                                    primary key,
+                            qso_date        date        not null,
+                            qso_time        time        not null,
+                            callsign        varchar(20) not null,
+                            frequency       bigint      not null,
+                            qso_mode        varchar(50) not null,
+                            signal_report   jsonb       not null,
+                            other_side_info jsonb       not null,
+                            operator_info   jsonb       not null,
+                            contest_info    jsonb       not null,
+                            extra_info      jsonb       not null,
+                            qsl_info        jsonb       not null
+                        );
+                        
+                        create unique index if not exists qso_record_uindex
+                            on qso_infos (qso_date, qso_time, callsign, frequency, qso_mode);
+                    """.trimIndent()
+                    conn.createStatement().execute(sql)
+                }
+                // TODO creat other tables
+            }
         }
     }
 }

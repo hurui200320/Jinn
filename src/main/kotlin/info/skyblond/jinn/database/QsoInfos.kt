@@ -1,10 +1,8 @@
 package info.skyblond.jinn.database
 
 import info.skyblond.jinn.extension.jsonb
-import kotlinx.serialization.Serializable
 import me.liuwj.ktorm.entity.Entity
 import me.liuwj.ktorm.schema.*
-import java.lang.Appendable
 import java.time.LocalDate
 import java.time.LocalTime
 
