@@ -1,31 +1,28 @@
 package info.skyblond.jinn.database
 
-import info.skyblond.jinn.extension.jsonb
-import me.liuwj.ktorm.entity.Entity
-import me.liuwj.ktorm.schema.*
+import info.skyblond.jinn.utils.DefaultValue
+import org.bson.types.ObjectId
 import java.time.LocalDate
-import java.time.LocalTime
+import java.time.LocalDateTime
 
-interface QsoInfo : Entity<QsoInfo> {
-    companion object : Entity.Factory<QsoInfo>()
+data class QsoInfo(
+    var qsoDateTime: LocalDateTime,
+    var callsign: String,
+    var frequency: Long,
+    var qsoMode: String,
+    var signalReport: SentRcvdPair,
+    var otherSideInfo: OperatorInfo,
+    var operatorInfo: OperatorInfo,
+    var contestInfo: ContestInfo,
+    var extraInfo: ExtraInfo,
+    var qslInfo: QslInfo,
+    val _id: ObjectId = ObjectId.get()
+)
 
-    val id: Long
-    var qsoDate: LocalDate
-    var qsoTime: LocalTime
-    var callsign: String
-    var frequency: Long
-    var qsoMode: String
-    var signalReport: SignalReport
-    var otherSideInfo: OperatorInfo
-    var operatorInfo: OperatorInfo
-    var contestInfo: ContestInfo
-    var extraInfo: ExtraInfo
-    var qslInfo: QslInfo
-}
-
-data class SignalReport(
+data class SentRcvdPair(
     val sent: String,
-    val received: String
+    val received: String,
+    val comment: String = ""
 )
 
 data class OperatorInfo(
@@ -34,7 +31,8 @@ data class OperatorInfo(
 )
 
 data class ContestInfo(
-    val name: String // TODO
+    val contestName: String,
+    val exchanges: SentRcvdPair
 )
 
 data class ExtraInfo(
@@ -42,20 +40,37 @@ data class ExtraInfo(
 )
 
 data class QslInfo(
-    val ok: Boolean // TODO
-)
+    val lotw: Digital,
+    val clublog: Digital,
+    val qrz: Digital,
+    val card: Card,
+    val comment: String
+) {
+    data class Digital(
+        val uploaded: Boolean,
+        val uploadedDate: LocalDate?,
+        val confirmed: Boolean,
+        val confirmedDate: LocalDate?
+    )
 
-object QsoInfos : Table<QsoInfo>("qso_infos") {
-    val id = long("id").primaryKey().bindTo { it.id }
-    val qsoDate = date("qso_date").bindTo { it.qsoDate }
-    val qsoTime = time("qso_time").bindTo { it.qsoTime }
-    val callsign = varchar("callsign").bindTo { it.callsign }
-    val frequency = long("frequency").bindTo { it.frequency }
-    val qsoMode = varchar("qso_mode").bindTo { it.qsoMode }
-    val signalReport = jsonb("signal_report", typeRef()).bindTo { it.signalReport }
-    val otherSideInfo = jsonb("other_side_info", typeRef()).bindTo { it.otherSideInfo }
-    val operatorInfo = jsonb("operator_info", typeRef()).bindTo { it.operatorInfo }
-    val contestInfo = jsonb("contest_info", typeRef()).bindTo { it.contestInfo }
-    val extraInfo = jsonb("extra_info", typeRef()).bindTo { it.extraInfo }
-    val qslInfo = jsonb("qsl_info", typeRef()).bindTo { it.qslInfo }
+    data class Card(
+        val sent: Sent,
+        val received: Received
+    ) {
+        data class Sent(
+            val sent: Boolean,
+            val sentDate: LocalDate?,
+            val required: Boolean,
+            val requiredDate: LocalDate?,
+            val via: String
+        )
+
+        data class Received(
+            val received: Boolean,
+            val receivedDate: LocalDate?,
+            val required: Boolean,
+            val requiredDate: LocalDate?,
+            val via: String
+        )
+    }
 }

@@ -1,6 +1,7 @@
 package info.skyblond.jinn.utils
 
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
 fun assertExit(code: Int, op: () -> Unit) {
@@ -24,5 +25,16 @@ fun assertExit(op: () -> Unit) {
         op()
     }
 
+    System.setSecurityManager(originalSecurityManager)
+}
+
+fun assertNotExit(op: () -> Unit) {
+    val disallowExitSecurityManager = DisallowExitSecurityManager(System.getSecurityManager())
+    val originalSecurityManager = System.getSecurityManager()
+    // Disable really exit jvm
+    System.setSecurityManager(disallowExitSecurityManager)
+    assertDoesNotThrow {
+        op()
+    }
     System.setSecurityManager(originalSecurityManager)
 }

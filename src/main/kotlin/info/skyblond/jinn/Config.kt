@@ -1,61 +1,103 @@
 package info.skyblond.jinn
 
-import com.impossibl.postgres.jdbc.PGDataSource
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
-import info.skyblond.jinn.extension.MyPostgreSqlDialect
+import com.charleskorn.kaml.Yaml
+import com.mongodb.MongoClientSettings
+import com.mongodb.MongoCredential
+import com.mongodb.ServerAddress
+import com.mongodb.client.MongoClient
+import com.mongodb.client.MongoDatabase
+import info.skyblond.jinn.database.QsoInfo
 import kotlinx.serialization.Serializable
-import me.liuwj.ktorm.database.Database
+import org.litote.kmongo.KMongo
+import java.io.Closeable
+import java.io.File
+import java.nio.charset.StandardCharsets
 
-object ConfigObject {
+object ConfigObject : Closeable {
     var configFilePath = ""
-    var config = ConfigPOJO(
-        ConfigPOJO.DatabaseConfig(
-            "localhost",
-            5432,
-            "logbook",
-            "logbook",
-            "qOA\$&fHGOceoIqxD"
-        )
+    var databaseConfig = DatabaseConfig(
+        "logbook",
+        false,
+        "",
+        "",
+        listOf(ServerAddr("host1", 27017))
     )
 
-    // No need to change database on the fly
-    private var internalDatabase: Database? = null
-    val database: Database
+    val config = ConfigPOJO(databaseConfig)
+
+
+    private var internalMongoClient: MongoClient? = null
+    private var internalMongoDatabase: MongoDatabase? = null
+
+    val database: MongoDatabase
         get() {
-            if (internalDatabase == null) {
-                val pgDataSource = PGDataSource()
-                pgDataSource.serverName = config.databaseConfig.host
-                pgDataSource.portNumber = config.databaseConfig.port
-                pgDataSource.user = config.databaseConfig.username
-                pgDataSource.password = config.databaseConfig.password
-                pgDataSource.databaseName = config.databaseConfig.database
-
-                val config = HikariConfig()
-                config.driverClassName = "com.impossibl.postgres.jdbc.PGDataSource"
-                config.dataSource = pgDataSource
-                config.addDataSourceProperty("cachePrepStmts", "true")
-                config.addDataSourceProperty("prepStmtCacheSize", "250")
-                config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
-
-                val hikariDataSource = HikariDataSource(config)
-
-                internalDatabase = Database.connect(hikariDataSource, dialect = MyPostgreSqlDialect())
+            if (internalMongoDatabase == null) {
+                if (internalMongoClient == null) {
+                    internalMongoClient = KMongo.createClient(
+                        MongoClientSettings.builder().apply {
+                            applyToClusterSettings { builder ->
+                                builder.hosts(
+                                    databaseConfig.address.map { ServerAddress(it.host, it.port) }
+                                )
+                            }
+                            if (databaseConfig.needAuthorization) {
+                                credential(
+                                    MongoCredential.createCredential(
+                                        databaseConfig.username,
+                                        databaseConfig.databaseName,
+                                        databaseConfig.password.toCharArray(),
+                                    )
+                                )
+                            }
+                        }.build()
+                    )
+                }
+                internalMongoDatabase = internalMongoClient!!.getDatabase(databaseConfig.databaseName)
             }
-            return internalDatabase!!
+            return internalMongoDatabase!!
         }
+
+    /**
+     * Read file with configFilePath and parse to config.
+     */
+    fun readConfig() {
+        val config = Yaml.default.decodeFromString(
+            ConfigPOJO.serializer(),
+            File(configFilePath).readText(StandardCharsets.UTF_8)
+        )
+
+        databaseConfig = config.databaseConfig
+    }
+
+    /**
+     * Reset internal status
+     */
+    fun reset(){
+        internalMongoClient = null
+        internalMongoDatabase = null
+    }
+
+    override fun close() {
+        TODO("Not yet implemented")
+    }
 }
 
 @Serializable
 data class ConfigPOJO(
     val databaseConfig: DatabaseConfig
-) {
-    @Serializable
-    data class DatabaseConfig(
-        val host: String,
-        val port: Int,
-        val database: String,
-        val username: String,
-        val password: String
-    )
-}
+)
+
+@Serializable
+data class DatabaseConfig(
+    val databaseName: String,
+    val needAuthorization: Boolean,
+    val username: String,
+    val password: String,
+    val address: List<ServerAddr>
+)
+
+@Serializable
+data class ServerAddr(
+    val host: String,
+    val port: Int
+)

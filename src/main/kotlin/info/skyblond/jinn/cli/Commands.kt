@@ -7,7 +7,11 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import info.skyblond.jinn.ConfigObject
 import info.skyblond.jinn.ConfigPOJO
+import info.skyblond.jinn.database.*
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.litote.kmongo.eq
+import org.litote.kmongo.findOne
+import org.litote.kmongo.getCollection
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -21,10 +25,15 @@ interface RootCommand<T : CliktCommand> {
     fun getAllSubcommands(): T
 }
 
-class Application : CliktCommand(), RootCommand<Application> {
+object Application : CliktCommand(), RootCommand<Application> {
     private val logger = LoggerFactory.getLogger(Application::class.java)
 
-    private val configPath by option("-c", "--config", metavar = "path", help = "path to configuration file").default("./config.yaml")
+    private val configPath by option(
+        "-c",
+        "--config",
+        metavar = "path",
+        help = "path to configuration file"
+    ).default("./config.yaml")
 
     // parse the config to object
     override fun run() {
@@ -32,58 +41,60 @@ class Application : CliktCommand(), RootCommand<Application> {
         val configFile = File(configPath)
         if (!configFile.exists()) {
             echo("Config file not found with given path: $configPath", err = true)
-            exitProcess(2)
-        }
-        if (!configFile.isFile) {
+            echo("Using default configuration instead, might be failed.", err = true)
+            return
+        } else if (configFile.isDirectory) {
             echo("$configPath is a directory.", err = true)
             exitProcess(21)
-        }
-        try {
-            ConfigObject.config = Yaml.default.decodeFromString(ConfigPOJO.serializer(), configFile.readText(StandardCharsets.UTF_8))
-            echo("Reading config from: $configPath")
-        } catch (e: Exception) {
-            logger.error(ExceptionUtils.getStackTrace(e))
-            echo("Error when reading config file. Please refer to 'logs/app.log' for more information.")
-            exitProcess(1)
+        } else {
+            try {
+                ConfigObject.readConfig()
+                echo("Reading config from: $configPath")
+            } catch (e: Exception) {
+                logger.error(ExceptionUtils.getStackTrace(e))
+                echo("Error when reading config file. Please refer to 'logs/app.log' for more information.")
+                exitProcess(1)
+            }
         }
     }
 
     // define some shortcuts
     override fun aliases(): Map<String, List<String>> = mapOf(
-            "QSO" to listOf("qso"),
-            "import" to listOf("qso", "import"),
-            "filter" to listOf("qso", "filter"),
-            "list" to listOf("qso", "list")
+        "QSO" to listOf("qso"),
+        "import" to listOf("qso", "import"),
+        "filter" to listOf("qso", "filter"),
+        "list" to listOf("qso", "list")
     )
 
     override fun getAllSubcommands() = this.subcommands(
-            QSO().getAllSubcommands(),
-            Init().getAllSubcommands()
+        QSO.getAllSubcommands(),
+        Init.getAllSubcommands(),
+        TestConfig
     )
 }
 
-class QSO : CliktCommand(name = "qso", help = "Manage QSO things"), RootCommand<QSO> {
+object QSO : CliktCommand(name = "qso", help = "Manage QSO things"), RootCommand<QSO> {
     override fun run() = Unit
 
     override fun getAllSubcommands() = this.subcommands(
-            Import(), List(), Filter()
+        Import, List, Filter
     )
 
-    class Import : CliktCommand(help = "Import QSO(s) from files") {
+    object Import : CliktCommand(help = "Import QSO(s) from files") {
         override fun run() {
             echo("Hello World!")
             TODO()
         }
     }
 
-    class List : CliktCommand(help = "Print all QSO(s) to stdout") {
+    object List : CliktCommand(help = "Print all QSO(s) to stdout") {
         override fun run() {
             echo("Hello World!")
             TODO()
         }
     }
 
-    class Filter : CliktCommand(help = "Filter QSO(s) and print to stdout") {
+    object Filter : CliktCommand(help = "Filter QSO(s) and print to stdout") {
         override fun run() {
             echo("Hello World!")
             TODO()
@@ -91,14 +102,14 @@ class QSO : CliktCommand(name = "qso", help = "Manage QSO things"), RootCommand<
     }
 }
 
-class Init : CliktCommand(name = "init", help = "Initialize things"), RootCommand<Init> {
+object Init : CliktCommand(name = "init", help = "Initialize things"), RootCommand<Init> {
     override fun run() = Unit
 
     override fun getAllSubcommands() = this.subcommands(
-            GenerateConfigFile(), InitDatabase()
+        GenerateConfigFile
     )
 
-    class GenerateConfigFile : CliktCommand(name = "config", help = "Generate default config.yaml with given path") {
+    object GenerateConfigFile : CliktCommand(name = "config", help = "Generate default config.yaml with given path") {
         private val logger = LoggerFactory.getLogger(GenerateConfigFile::class.java)
 
         override fun run() {
@@ -110,7 +121,10 @@ class Init : CliktCommand(name = "init", help = "Initialize things"), RootComman
                 }
                 configFile.createNewFile() -> {
                     try {
-                        configFile.writeText(Yaml.default.encodeToString(ConfigPOJO.serializer(), ConfigObject.config), StandardCharsets.UTF_8)
+                        configFile.writeText(
+                            Yaml.default.encodeToString(ConfigPOJO.serializer(), ConfigObject.config),
+                            StandardCharsets.UTF_8
+                        )
                         echo("Config file created: ${ConfigObject.configFilePath}")
                     } catch (e: Exception) {
                         logger.error(ExceptionUtils.getStackTrace(e))
@@ -124,38 +138,27 @@ class Init : CliktCommand(name = "init", help = "Initialize things"), RootComman
             }
         }
     }
+}
 
-    class InitDatabase : CliktCommand(name = "database", help = "Initialize database for first use") {
-        override fun run() {
-            val database = ConfigObject.database
-            database.useTransaction {
-                // Create table qso_infos
-                database.useConnection { conn ->
-                    val sql = """
-                        create table if not exists qso_infos (
-                            id              bigserial   not null
-                                constraint qso_infos_pk
-                                    primary key,
-                            qso_date        date        not null,
-                            qso_time        time        not null,
-                            callsign        varchar(20) not null,
-                            frequency       bigint      not null,
-                            qso_mode        varchar(50) not null,
-                            signal_report   jsonb       not null,
-                            other_side_info jsonb       not null,
-                            operator_info   jsonb       not null,
-                            contest_info    jsonb       not null,
-                            extra_info      jsonb       not null,
-                            qsl_info        jsonb       not null
-                        );
-                        
-                        create unique index if not exists qso_record_uindex
-                            on qso_infos (qso_date, qso_time, callsign, frequency, qso_mode);
-                    """.trimIndent()
-                    conn.createStatement().execute(sql)
-                }
-                // TODO creat other tables
-            }
+object TestConfig : CliktCommand(name = "test", help = "Test config file") {
+    private val logger = LoggerFactory.getLogger(TestConfig::class.java)
+    override fun run() {
+        try {
+            val database = ConfigObject.database //normal java driver usage
+            val col = database.getCollection<DatabaseTestObject>() //KMongo extension method
+            // test with writing a object
+            val obj = DatabaseTestObject()
+            col.insertOne(obj)
+            require(col.findOne { QsoInfo::_id eq obj._id } != null){ "Cannot read the object that just write in." }
+            col.deleteOne(QsoInfo::_id eq obj._id)
+            col.drop()
+            echo("Test ok!")
+        } catch (e: Exception) {
+            logger.error(ExceptionUtils.getStackTrace(e))
+            echo("Error when testing configuration. Please refer to logs/app.log for more information.")
+            exitProcess(5)
         }
     }
 }
+
+

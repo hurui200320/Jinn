@@ -19,14 +19,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
-      postgresql:
-        image: postgres
+      mongo:
+        image: mongo
         env:
-          POSTGRES_PASSWORD: qOA$&fHGOceoIqxD
-          POSTGRES_USER: logbook
-          POSTGRES_DB: logbook
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: example
         ports:
-          - 5432:5432
+          - 27017:27017
     steps:
     - uses: actions/checkout@v2
     - name: Setup Java JDK
