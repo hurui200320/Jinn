@@ -5,8 +5,10 @@ import info.skyblond.jinn.DatabaseConfig
 import info.skyblond.jinn.ServerAddr
 import java.io.File
 
+internal fun isDevelopEnv() = File("./config.yaml").exists()
+
 internal fun prepareDatabaseConfig() {
-    if (File("./config.yaml").exists()) {
+    if (isDevelopEnv()) {
         // Is develop env
         ConfigObject.databaseConfig = DatabaseConfig(
             "logbook", false, "", "", "",

@@ -1,9 +1,13 @@
 package info.skyblond.jinn.database
 
-import info.skyblond.jinn.utils.DefaultValue
 import org.bson.types.ObjectId
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+interface DatabasePOJO {
+    @Suppress("PropertyName")
+    val _id: ObjectId
+}
 
 data class QsoInfo(
     var qsoDateTime: LocalDateTime,
@@ -16,8 +20,8 @@ data class QsoInfo(
     var contestInfo: ContestInfo,
     var extraInfo: ExtraInfo,
     var qslInfo: QslInfo,
-    val _id: ObjectId = ObjectId.get()
-)
+    override val _id: ObjectId = ObjectId.get()
+) : DatabasePOJO
 
 data class SentRcvdPair(
     val sent: String,

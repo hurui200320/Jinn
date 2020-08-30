@@ -6,7 +6,6 @@ import com.mongodb.MongoCredential
 import com.mongodb.ServerAddress
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoDatabase
-import info.skyblond.jinn.database.QsoInfo
 import kotlinx.serialization.Serializable
 import org.litote.kmongo.KMongo
 import java.io.Closeable
