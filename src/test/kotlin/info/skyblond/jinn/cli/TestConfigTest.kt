@@ -24,7 +24,7 @@ internal class TestConfigTest {
     fun testDatabaseFailedTest(){
         // 2000 shouldn't be MongoDB port
         ConfigObject.databaseConfig = DatabaseConfig(
-            "logbook", false, "", "",
+            "logbook", false, "", "", "",
             listOf(ServerAddr("localhost", 2000))
         )
         ConfigObject.reset()

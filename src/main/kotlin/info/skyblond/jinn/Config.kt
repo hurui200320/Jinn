@@ -20,6 +20,7 @@ object ConfigObject : Closeable {
         false,
         "",
         "",
+        "",
         listOf(ServerAddr("host1", 27017))
     )
 
@@ -44,7 +45,7 @@ object ConfigObject : Closeable {
                                 credential(
                                     MongoCredential.createCredential(
                                         databaseConfig.username,
-                                        databaseConfig.databaseName,
+                                        databaseConfig.source,
                                         databaseConfig.password.toCharArray(),
                                     )
                                 )
@@ -91,6 +92,7 @@ data class ConfigPOJO(
 data class DatabaseConfig(
     val databaseName: String,
     val needAuthorization: Boolean,
+    val source: String,
     val username: String,
     val password: String,
     val address: List<ServerAddr>
