@@ -14,6 +14,7 @@ internal fun prepareDatabaseConfig() {
         )
     } else {
         // Is test env
+        println("---------- Test Env Detected ----------")
         ConfigObject.databaseConfig = DatabaseConfig(
             "logbook", true, "admin", "root", "example",
             listOf(ServerAddr("localhost", 27017))
