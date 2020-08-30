@@ -21,7 +21,7 @@ jobs:
     services:
       postgresql:
         image: postgres
-        environment:
+        env:
           POSTGRES_PASSWORD: qOA$&fHGOceoIqxD
           POSTGRES_USER: logbook
           POSTGRES_DB: logbook
